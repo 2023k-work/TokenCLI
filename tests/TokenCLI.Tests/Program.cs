@@ -295,9 +295,14 @@ Test("real_cli_process_json_and_no_secret_output", async () =>
     }
     var version = await Run(["version"]); Check(version.Code == 0 && JsonNode.Parse(version.Out)!["name"]!.GetValue<string>() == "TokenCLI");
     var schema = await Run(["schema", "input"]); Check(schema.Code == 0 && JsonNode.Parse(schema.Out)!["additionalProperties"]!.GetValue<bool>() == false);
-    var bad = await Run(["aoelr"], "{\"operation\":\"generate\",\"payload\":{},\"secret\":\"" + Secret + "\"}");
-    Check(bad.Code == 2 && !bad.Out.Contains(Secret) && !bad.Err.Contains(Secret));
-    Error(JsonNode.Parse(bad.Out)!.AsObject(), "invalid_input", "not_sent");
+    var help = await Run(["help"]);
+    Check(help.Code == 0 && help.Out.Contains("responses") && !help.Out.Contains("aoelr", StringComparison.OrdinalIgnoreCase));
+    foreach (var command in new[] { "responses", "aoelr" })
+    {
+        var bad = await Run([command], "{\"operation\":\"generate\",\"payload\":{},\"secret\":\"" + Secret + "\"}");
+        Check(bad.Code == 2 && !bad.Out.Contains(Secret) && !bad.Err.Contains(Secret));
+        Error(JsonNode.Parse(bad.Out)!.AsObject(), "invalid_input", "not_sent");
+    }
     var set = await Run(["credentials", "set", "openai"], Secret); Check(set.Code == 2 && !set.Out.Contains(Secret) && !set.Err.Contains(Secret));
 });
 

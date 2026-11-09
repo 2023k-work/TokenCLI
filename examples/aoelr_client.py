@@ -1,4 +1,4 @@
-"""Optional AOELR Python integration sample; TokenCLI itself does not require Python.
+"""Optional Python CLI integration sample; TokenCLI itself does not require Python.
 
 Default invocation checks version only. Never starts an experiment or calls a paid API.
 """
@@ -10,13 +10,13 @@ import subprocess
 def invoke_reserved_once(executable, envelope, persist_reservation):
     """Integration seam ONLY; main never calls this function.
 
-    AOELR must validate authorization/count admission and durably reserve FIRST.
+    the caller must validate authorization/count admission and durably reserve FIRST.
     No retry, no shell, no auth values, no execution of provider text.
     """
     packet = json.loads(json.dumps(envelope))
     persist_reservation(json.loads(json.dumps(packet)))
     try:
-        result = subprocess.run([str(executable), "aoelr"], input=json.dumps(packet, ensure_ascii=False),
+        result = subprocess.run([str(executable), "responses"], input=json.dumps(packet, ensure_ascii=False),
                                 text=True, encoding="utf-8", capture_output=True, timeout=120,
                                 shell=False)
         evidence = json.loads(result.stdout)

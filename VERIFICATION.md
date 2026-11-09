@@ -1,10 +1,12 @@
 # 免費驗證紀錄
 
+0.1.1 更新：文件與公開 CLI 說明改為通用 Responses 用途，新增 `responses` 命令，保留原有命令相容入口與 JSON 契約。下列測試已對新版重新執行，涵蓋兩個入口的子程序輸入驗證，以及公開說明不含特定專案名稱。
+
 本次在 Windows x64、.NET SDK 9.0.318／.NET 8.0.31 完成建置，0 警告、0 錯誤。
 
 **61 項測試全部通過，真實 AI API 呼叫為 0。**
 
-- 精確 AOELR count／generate 端點、完整訊息結構與固定參數。
+- 精確固定 Responses count／generate 端點、完整訊息結構與固定參數。
 - 原始模型／服務層級／推理設定、完整巢狀用量、輸出串接及缺失欄位不補造。
 - 未知欄位、URL／method／provider 注入、錯誤模型／推理／工具／store／stream／truncation、對話延續、檔案、快取斷點、錯誤角色與 JSON 重複 key 拒絕。
 - 401／403／429／500、302／307 重新導向、逾時、網路錯誤與取消只嘗試一次；沒有推算或填入費用。
@@ -24,4 +26,4 @@
 .\tests\TokenCLI.Tests\bin\Release\net8.0\TokenCLI.Tests.exe --cli '完整發布路徑\TokenCLI.exe'
 ```
 
-本次沒有修改 Codex 設定、AOELR 凍結程式／帳本，亦未對 GitHub 發布新專案。
+免費驗證沒有修改 Codex 設定、外部專案程式／帳本。原始碼與 Windows 發布包由使用者要求發布至公開 GitHub 倉庫。

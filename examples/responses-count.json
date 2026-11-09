@@ -1,0 +1,19 @@
+{
+  "operation": "count",
+  "payload": {
+    "model": "gpt-6.1-sol",
+    "reasoning": {"effort": "medium"},
+    "service_tier": "default",
+    "max_output_tokens": 3072,
+    "tools": [],
+    "tool_choice": "none",
+    "store": false,
+    "stream": false,
+    "truncation": "disabled",
+    "prompt_cache_options": {"mode": "explicit", "ttl": "30m"},
+    "input": [
+      {"role": "developer", "content": "Respond with plain text."},
+      {"role": "user", "content": [{"type": "input_text", "text": "Hello"}]}
+    ]
+  }
+}

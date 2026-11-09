@@ -1,6 +1,30 @@
 # TokenCLI
 
-獨立 C# CLI，透過 Windows Credential Manager 管理 OpenAI／Anthropic API Key；支援固定 AOELR Responses 請求與一般文字生成。**沒有 MCP、Codex 登錄、Python 或 npm runtime 需求。**
+公開原始碼：[2023k-work/TokenCLI](https://github.com/2023k-work/TokenCLI)。Windows 使用者可從 [v0.1.1 Release](https://github.com/2023k-work/TokenCLI/releases/tag/v0.1.1) 下載 ZIP，解壓後雙擊 BAT；下方提供完整操作方式。
+
+獨立 C# CLI，透過 Windows Credential Manager 管理 OpenAI／Anthropic API Key；支援固定 Responses API 請求與一般文字生成。**沒有 MCP、Codex 登錄、Python 或 npm runtime 需求。**
+
+## 快速開始：雙擊 BAT 設定 Token
+
+1. 解壓 `TokenCLI-0.1.1-win-x64.zip`，保留檔案的相對位置。
+2. 雙擊 **`Start-TokenCLI.bat`** 開啟中文選單。使用完整專案時，直接雙擊 `D:\Desktop\TokenCLI\Start-TokenCLI.bat`；也可使用 `dist\win-x64` 內的 BAT。
+3. 按 `1` 設定 OpenAI／ChatGPT API Key，或按 `2` 設定 Claude／Anthropic API Key；只需設定實際使用的供應商。
+4. 在提示處貼上或輸入 Token，再按 **Enter**。輸入不會顯示文字或星號，這是正常的隱藏輸入。按 **Esc** 可取消，不儲存本次輸入。
+5. 完成後按任意鍵回到選單，再按 `3` 查看是否已儲存，最後按 `0` 離開。
+
+**同一 Windows 帳號設定一次即可，後續執行及重新開機會自動取用。** 不需要每次先開 BAT，也不需要把 Token 傳給呼叫端。BAT 只管理憑證與顯示說明，不會呼叫供應商 API 或啟動實驗。
+
+| 選項 | 功能 |
+| --- | --- |
+| `1` | 設定或更新 OpenAI／ChatGPT Token |
+| `2` | 設定或更新 Claude／Anthropic Token |
+| `3` | 查看憑證是否存在；`true` 表示已儲存，`false` 表示尚未設定 |
+| `4` | 刪除 OpenAI Token，輸入 `Y` 才刪除，`N` 返回 |
+| `5` | 刪除 Claude Token，輸入 `Y` 才刪除，`N` 返回 |
+| `6` | 查看 CLI 命令說明 |
+| `0` | 離開選單 |
+
+`true` 只表示 Credential Manager 中存在憑證，不代表金鑰有效、有 API 權限或有可用額度。選單不會進行真實 API 驗證。
 
 ## 使用者先準備什麼
 
@@ -10,15 +34,16 @@
 
 ## 設定一次 Token
 
-也可直接雙擊 **`Start-TokenCLI.bat`**，用中文選單設定 OpenAI／Claude Token、查看狀態或刪除憑證。輸入由 CLI 隱藏處理，BAT 不讀取或暫存 Token；刪除前會要求確認。此選單不呼叫 AI API。專案根目錄與 `dist/win-x64` 都附有 BAT，發布 ZIP 解壓後亦可直接使用。
-
-在一般 PowerShell 終端執行：
+建議使用上方 BAT 選單。若偏好命令列，可在一般 PowerShell 終端切換至 EXE 所在目錄：
 
 ```powershell
+cd 'D:\Desktop\TokenCLI\dist\win-x64'
 .\TokenCLI.exe credentials set openai
 .\TokenCLI.exe credentials set anthropic
 .\TokenCLI.exe credentials status
 ```
+
+BAT 直接呼叫這些命令，由 CLI 隱藏讀取 Token；BAT 不會讀取或暫存 Token。其他程式後續直接使用 `TokenCLI.exe`，不透過互動選單。
 
 `set` 隱藏輸入、不顯示星號；只需設定實際使用的供應商。API Key 存在目前 Windows 使用者的 Credential Manager，目標名稱為 `TokenCLI/openai`、`TokenCLI/anthropic`。**後續執行與重新開機都不需再輸入**；換使用者、憑證被刪除／撤銷／過期或需輪替時才重新設定。再次 set 可覆寫該供應商的舊 Token。
 
@@ -30,6 +55,14 @@
 .\TokenCLI.exe credentials delete openai
 ```
 
+## BAT 常見問題
+
+- **找不到 TokenCLI.exe**：完整解壓 ZIP，不要只複製 BAT。BAT 可放在 EXE 旁邊，或完整專案根目錄並保留 `dist\win-x64\TokenCLI.exe`。
+- **輸入 Token 沒有任何字元**：這是隱藏輸入，貼上或輸入後按 Enter，不需要因為沒有星號而重複貼上。
+- **另一個終端／程式顯示未設定**：確認使用相同 Windows 帳號。不同帳號或服務帳號的 Credential Manager 不共用。
+- **金鑰已儲存但 API 失敗**：狀態查詢不會測試金鑰是否有效；應另確認供應商 API Key、權限及額度。需更換時再次選 `1` 或 `2` 即可。
+- **需要檢查 BAT 是否找到 EXE**：在 PowerShell 執行 `.\Start-TokenCLI.bat --check`，只輸出版本，不查詢憑證或呼叫 API。
+
 ## 免費命令
 
 ```powershell
@@ -40,13 +73,13 @@
 .\TokenCLI.exe schema generate-text
 ```
 
-沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 aoelr／generate-text 命令則**會連供應商並可能計費**；本次開發沒有呼叫它們的真實 API。
+沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 responses／generate-text 命令則**會連供應商並可能計費**；本次開發沒有呼叫它們的真實 API。
 
-## AOELR：一個程序、一份輸入、一個結果
+## 程式整合：一個程序、一份輸入、一個結果
 
-命令：`TokenCLI.exe aoelr`。stdin 必須是 UTF-8（無 BOM）完整 JSON `{operation,payload}`，輸入完畢後關閉 stdin；不是持續等待多筆的 JSONL 服務。stdout 只輸出一份 JSON 證據，無啟動畫面或診斷混入。不要將 API Key 放在 JSON 中。
+命令：`TokenCLI.exe responses`。stdin 必須是 UTF-8（無 BOM）完整 JSON `{operation,payload}`，輸入完畢後關閉 stdin；不是持續等待多筆的 JSONL 服務。stdout 只輸出一份 JSON 證據，無啟動畫面或診斷混入。不要將 API Key 放在 JSON 中。
 
-完整 count 範例見 [examples/aoelr-count.json](examples/aoelr-count.json)。保留訊息陣列，所有固定欄位必填：
+完整 count 範例見 [examples/responses-count.json](examples/responses-count.json)。保留訊息陣列，所有固定欄位必填：
 
 ```json
 {
@@ -71,24 +104,24 @@ operation 僅 count／generate；端點分別固定為 `https://api.openai.com/v
 
 僅接受 system／developer／user／assistant 的純文字訊息；content 可為字串或 input_text 區塊。禁止未知欄位、URL 參數、任意方法、遠端檔案、工具、快取斷點、previous_response_id、conversation、Shell／Python 指令欄位。文字中的 URL 只是文字，不會被下載。完整 stdin 上限 262144 bytes，最多 256 則訊息、每則最多 256 個區塊。重複 JSON key、無效 JSON／非有限數拒絕。
 
-機器可讀契約見 [輸入 Schema](schemas/aoelr_responses.input.json) 與 [輸出 Schema](schemas/aoelr_responses.output.json)，兩份直接沿用 TokenBridge AOELR 契約；程式在送出前以等價的嚴格規則驗證，schema 指令可離線輸出內嵌版本。
+機器可讀契約見 [輸入 Schema](schemas/responses.input.json) 與 [輸出 Schema](schemas/responses.output.json)，兩份描述固定 Responses 請求及通用稽核結果；程式在送出前以等價的嚴格規則驗證，schema 指令可離線輸出內嵌版本。
 
-取得 count 不會自行生成。AOELR 負責每次呼叫前持久保留次數與費用、完整計數後確認不超過 4096 tokens，才使用同一 payload 明確發起 generate。未知結果保留全額並停止。CLI 不重建帳本、不結算費用、不評分、不排程，不執行模型回傳的程式碼。選用的 Python 呼叫範例見 [examples/aoelr_client.py](examples/aoelr_client.py)，預設只查 CLI version；Python 是 AOELR 自身的選擇，TokenCLI 不需要它。
+取得 count 不會自行生成。呼叫端負責每次呼叫前持久保留次數與費用、完整計數後確認不超過 4096 tokens，才使用同一 payload 明確發起 generate。未知結果保留全額並停止。CLI 不重建帳本、不結算費用、不評分、不排程，不執行模型回傳的程式碼。選用的 Python 呼叫範例見 [examples/cli_client.py](examples/cli_client.py)，預設只查 CLI version；Python 是範例呼叫端的選擇，TokenCLI 不需要它。
 
 ## 稽核結果與失敗語意
 
 stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、**實際回傳** model／service_tier／reasoning、status／incomplete_details、完整巢狀 usage、所有輸出文字與耗時。沒有 usage 時維持 null，不補零；不從請求補出供應商 model。`bridge_request_id` 沿用原 Schema 名稱，是本機關聯 UUID，與供應商 ID 分開。
 
-`raw_response_json` 是解析、認證遮蔽後重新序列化的完整 JSON，並非原始 HTTP bytes；順序／空白／escape 表達可能改變。巢狀欄位保留，認證反射與 auth 欄位值遮蔽。`present_fields` 配合 raw JSON 可區分缺失與明確 null。HTTP 錯誤不回傳原始文字、headers 或錯誤 body。`ok=true` 只代表收到可解析 2xx JSON，不代表模型完成、符合 AOELR 契約或費用可結算。
+`raw_response_json` 是解析、認證遮蔽後重新序列化的完整 JSON，並非原始 HTTP bytes；順序／空白／escape 表達可能改變。巢狀欄位保留，認證反射與 auth 欄位值遮蔽。`present_fields` 配合 raw JSON 可區分缺失與明確 null。HTTP 錯誤不回傳原始文字、headers 或錯誤 body。`ok=true` 只代表收到可解析 2xx JSON，不代表模型完成、符合呼叫端契約或費用可結算。
 
 | outcome | 意義 |
 | --- | --- |
 | not_sent | 驗證／憑證／傳輸準備未通過，未進入 HTTP send |
 | attempted_unknown | 已嘗試送出，但完成證據未知；可能已有 HTTP 200 但讀取、大小或解析失敗 |
 | http_error | 收到非 2xx，含 429、重新導向；不推斷費用 |
-| response_received | 收到可解析 2xx JSON，仍由 AOELR 審核完成狀態、用量與費用 |
+| response_received | 收到可解析 2xx JSON，仍由呼叫端審核完成狀態、用量與費用 |
 
-沒有 calculated_usd／billed_usd，也不宣稱 timeout、429、取消或中斷為零費用。程序被殺、stdout 遺失或呼叫端逾時可能完全沒有結果；AOELR 必須依既有帳本保留費用、停止且不重送。CLI 本身沒有跨程序去重；呼叫端重啟並再次呼叫就是新請求。
+沒有 calculated_usd／billed_usd，也不宣稱 timeout、429、取消或中斷為零費用。程序被殺、stdout 遺失或呼叫端逾時可能完全沒有結果；呼叫端必須依既有帳本保留費用、停止且不重送。CLI 本身沒有跨程序去重；呼叫端重啟並再次呼叫就是新請求。
 
 | exit code | 意義 |
 | --- | --- |
@@ -99,7 +132,7 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 
 ## 一般 OpenAI／Anthropic 文字呼叫
 
-命令 `TokenCLI.exe generate-text` 接收 `{provider,model,prompt,max_output_tokens?}`；參考 [OpenAI](examples/openai.json)、[Anthropic](examples/anthropic.json) 範例。model 由使用者明確指定為自己帳號可用的 API model ID；prompt 1–32000 個 .NET 字元，輸出上限 16–8192（預設 1024）。回傳同樣的證據格式，完整 Anthropic stop_reason 等欄位保留在 raw_response_json。AOELR 必須使用 aoelr 命令，不以一般命令繞過固定實驗設定。
+命令 `TokenCLI.exe generate-text` 接收 `{provider,model,prompt,max_output_tokens?}`；參考 [OpenAI](examples/openai.json)、[Anthropic](examples/anthropic.json) 範例。model 由使用者明確指定為自己帳號可用的 API model ID；prompt 1–32000 個 .NET 字元，輸出上限 16–8192（預設 1024）。回傳同樣的證據格式，完整 Anthropic stop_reason 等欄位保留在 raw_response_json。呼叫端必須使用 responses 命令，不以一般命令繞過固定實驗設定。
 
 ## 傳輸與安全
 

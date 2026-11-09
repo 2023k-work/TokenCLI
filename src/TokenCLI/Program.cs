@@ -24,16 +24,16 @@ public static class Program
     {
         if (args.Length == 0 || args is ["help"] or ["--help"] or ["-h"])
         {
-            Console.WriteLine("TokenCLI 0.1.0\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  aoelr           (one JSON {operation,payload} from stdin)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
+            Console.WriteLine("TokenCLI 0.1.1\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  responses       (one JSON {operation,payload} from stdin)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
             return 0;
         }
         if (args is ["version"])
-        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.1.0" }); return 0; }
+        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.1.1" }); return 0; }
         if (args is ["schema", var schema] && schema is "input" or "output" or "generate-text")
         {
-            var name = schema switch { "input" => "aoelr_responses.input.json", "output" => "aoelr_responses.output.json", _ => "generate-text.input.json" };
+            var name = schema switch { "input" => "responses.input.json", "output" => "responses.output.json", _ => "generate-text.input.json" };
             var assembly = Assembly.GetExecutingAssembly();
-            var resource = assembly.GetManifestResourceNames().Single(n => n.EndsWith(name, StringComparison.Ordinal));
+            var resource = assembly.GetManifestResourceNames().Single(n => n.EndsWith("." + name, StringComparison.Ordinal));
             using var reader = new StreamReader(assembly.GetManifestResourceStream(resource)!);
             Console.WriteLine(await reader.ReadToEndAsync(cancellation));
             return 0;
@@ -56,14 +56,14 @@ public static class Program
             else credentials.Delete(provider);
             Write(new JsonObject { ["ok"] = true, ["provider"] = provider, ["action"] = action }); return 0;
         }
-        if (args is ["aoelr"] or ["generate-text"])
+        if (args is ["responses"] or ["aoelr"] or ["generate-text"])
         {
             JsonObject evidence;
             try
             {
                 using var input = Console.OpenStandardInput();
                 var bytes = await ReadInput(input, cancellation);
-                evidence = await new ApiEngine(credentials).ExecuteAsync(bytes, args[0] == "aoelr", cancellation);
+                evidence = await new ApiEngine(credentials).ExecuteAsync(bytes, args[0] != "generate-text", cancellation);
             }
             catch (ContractException) { evidence = ApiEngine.EmptyEvidence(); evidence["error_code"] = "invalid_input"; }
             catch (OperationCanceledException) { evidence = ApiEngine.EmptyEvidence(); evidence["error_code"] = "cancelled"; }
