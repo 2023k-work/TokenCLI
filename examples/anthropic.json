@@ -1,0 +1,1 @@
+{"provider":"anthropic","model":"YOUR_EXACT_CLAUDE_MODEL_ID","prompt":"Hello","max_output_tokens":1024}

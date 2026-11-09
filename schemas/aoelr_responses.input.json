@@ -1,0 +1,200 @@
+{
+  "$defs": {
+    "CacheOptions": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "explicit",
+          "title": "Mode",
+          "type": "string"
+        },
+        "ttl": {
+          "const": "30m",
+          "title": "Ttl",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode",
+        "ttl"
+      ],
+      "title": "CacheOptions",
+      "type": "object"
+    },
+    "FixedPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "const": "gpt-6.1-sol",
+          "title": "Model",
+          "type": "string"
+        },
+        "reasoning": {
+          "$ref": "#/$defs/Reasoning"
+        },
+        "service_tier": {
+          "const": "default",
+          "title": "Service Tier",
+          "type": "string"
+        },
+        "max_output_tokens": {
+          "const": 3072,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "tools": {
+          "items": {},
+          "maxItems": 0,
+          "title": "Tools",
+          "type": "array"
+        },
+        "tool_choice": {
+          "const": "none",
+          "title": "Tool Choice",
+          "type": "string"
+        },
+        "store": {
+          "const": false,
+          "title": "Store",
+          "type": "boolean"
+        },
+        "stream": {
+          "const": false,
+          "title": "Stream",
+          "type": "boolean"
+        },
+        "truncation": {
+          "const": "disabled",
+          "title": "Truncation",
+          "type": "string"
+        },
+        "prompt_cache_options": {
+          "$ref": "#/$defs/CacheOptions"
+        },
+        "input": {
+          "items": {
+            "$ref": "#/$defs/Message"
+          },
+          "maxItems": 256,
+          "minItems": 1,
+          "title": "Input",
+          "type": "array"
+        }
+      },
+      "required": [
+        "model",
+        "reasoning",
+        "service_tier",
+        "max_output_tokens",
+        "tools",
+        "tool_choice",
+        "store",
+        "stream",
+        "truncation",
+        "prompt_cache_options",
+        "input"
+      ],
+      "title": "FixedPayload",
+      "type": "object"
+    },
+    "Message": {
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "enum": [
+            "system",
+            "developer",
+            "user",
+            "assistant"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "$ref": "#/$defs/TextBlock"
+              },
+              "maxItems": 256,
+              "minItems": 1,
+              "type": "array"
+            }
+          ],
+          "title": "Content"
+        },
+        "type": {
+          "const": "message",
+          "default": "message",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role",
+        "content"
+      ],
+      "title": "Message",
+      "type": "object"
+    },
+    "Reasoning": {
+      "additionalProperties": false,
+      "properties": {
+        "effort": {
+          "const": "medium",
+          "title": "Effort",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effort"
+      ],
+      "title": "Reasoning",
+      "type": "object"
+    },
+    "TextBlock": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "input_text",
+          "title": "Type",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 200000,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "text"
+      ],
+      "title": "TextBlock",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "operation": {
+      "enum": [
+        "count",
+        "generate"
+      ],
+      "title": "Operation",
+      "type": "string"
+    },
+    "payload": {
+      "$ref": "#/$defs/FixedPayload"
+    }
+  },
+  "required": [
+    "operation",
+    "payload"
+  ],
+  "title": "Arguments",
+  "type": "object"
+}

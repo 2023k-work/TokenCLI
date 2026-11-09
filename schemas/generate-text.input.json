@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["provider", "model", "prompt"],
+  "properties": {
+    "provider": {"enum": ["openai", "anthropic"]},
+    "model": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{1,128}$"},
+    "prompt": {"type": "string", "minLength": 1, "maxLength": 32000},
+    "max_output_tokens": {"type": "integer", "minimum": 16, "maximum": 8192, "default": 1024}
+  }
+}

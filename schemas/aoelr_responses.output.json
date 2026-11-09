@@ -1,0 +1,177 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "bridge_request_id": {
+      "title": "Bridge Request Id",
+      "type": "string"
+    },
+    "operation": {
+      "anyOf": [
+        {
+          "enum": [
+            "count",
+            "generate"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Operation"
+    },
+    "outcome": {
+      "enum": [
+        "not_sent",
+        "attempted_unknown",
+        "http_error",
+        "response_received"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "http_attempted": {
+      "title": "Http Attempted",
+      "type": "boolean"
+    },
+    "http_status": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Http Status"
+    },
+    "provider_request_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Provider Request Id"
+    },
+    "elapsed_s": {
+      "title": "Elapsed S",
+      "type": "number"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "enum": [
+            "invalid_input",
+            "credential_error",
+            "missing_token",
+            "sensitive_input",
+            "authentication_failed",
+            "rate_limited",
+            "redirect_rejected",
+            "http_error",
+            "timeout",
+            "network_error",
+            "cancelled",
+            "response_too_large",
+            "invalid_response",
+            "internal_error"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error Code"
+    },
+    "response_id": {
+      "default": null,
+      "title": "Response Id"
+    },
+    "model": {
+      "default": null,
+      "title": "Model"
+    },
+    "service_tier": {
+      "default": null,
+      "title": "Service Tier"
+    },
+    "reasoning": {
+      "default": null,
+      "title": "Reasoning"
+    },
+    "status": {
+      "default": null,
+      "title": "Status"
+    },
+    "incomplete_details": {
+      "default": null,
+      "title": "Incomplete Details"
+    },
+    "usage": {
+      "default": null,
+      "title": "Usage"
+    },
+    "input_tokens": {
+      "default": null,
+      "title": "Input Tokens"
+    },
+    "output_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Text"
+    },
+    "raw_response_json": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Response Json"
+    },
+    "present_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Present Fields",
+      "type": "array"
+    }
+  },
+  "required": [
+    "ok",
+    "bridge_request_id",
+    "operation",
+    "outcome",
+    "http_attempted",
+    "http_status",
+    "provider_request_id",
+    "elapsed_s",
+    "error_code"
+  ],
+  "title": "Evidence",
+  "type": "object"
+}
