@@ -4,6 +4,8 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using TokenCLI;
+using System.Net.Sockets;
+using System.Security.Authentication;
 
 if (args is ["--native-check", var testPrefix] && testPrefix.StartsWith("TokenCLI.Tests/", StringComparison.Ordinal))
 {
@@ -295,8 +297,12 @@ Test("real_cli_process_json_and_no_secret_output", async () =>
     }
     var version = await Run(["version"]); Check(version.Code == 0 && JsonNode.Parse(version.Out)!["name"]!.GetValue<string>() == "TokenCLI");
     var schema = await Run(["schema", "input"]); Check(schema.Code == 0 && JsonNode.Parse(schema.Out)!["additionalProperties"]!.GetValue<bool>() == false);
+    var networkSchema = await Run(["schema", "network"]);
+    Check(networkSchema.Code == 0 && JsonNode.Parse(networkSchema.Out)!["properties"]!["http_requests_sent"]!["const"]!.GetValue<int>() == 0);
     var help = await Run(["help"]);
-    Check(help.Code == 0 && help.Out.Contains("responses") && !help.Out.Contains("aoelr", StringComparison.OrdinalIgnoreCase));
+    Check(help.Code == 0 && help.Out.Contains("responses") && help.Out.Contains("doctor network") && !help.Out.Contains("aoelr", StringComparison.OrdinalIgnoreCase));
+    var invalidDoctor = await Run(["doctor", "network", "https://evil.invalid"]);
+    Check(invalidDoctor.Code == 2 && JsonNode.Parse(invalidDoctor.Out)!["error_code"]!.GetValue<string>() == "invalid_arguments");
     foreach (var command in new[] { "responses", "aoelr" })
     {
         var bad = await Run([command], "{\"operation\":\"generate\",\"payload\":{},\"secret\":\"" + Secret + "\"}");
@@ -304,6 +310,97 @@ Test("real_cli_process_json_and_no_secret_output", async () =>
         Error(JsonNode.Parse(bad.Out)!.AsObject(), "invalid_input", "not_sent");
     }
     var set = await Run(["credentials", "set", "openai"], Secret); Check(set.Code == 2 && !set.Out.Contains(Secret) && !set.Err.Contains(Secret));
+});
+
+foreach (var provider in new[] { "openai", "anthropic" })
+Test("doctor_fixed_host_and_stages_" + provider, async () =>
+{
+    var probe = new FakeNetworkProbe();
+    var result = await NetworkDoctor.RunAsync(provider, injected: probe);
+    Check(result["ok"]!.GetValue<bool>() && probe.Calls.SequenceEqual(new[] { "dns", "tcp", "tls" }));
+    var expected = provider == "openai" ? "api.openai.com" : "api.anthropic.com";
+    Check(probe.Hosts.All(h => h == expected) && result["host"]!.GetValue<string>() == expected);
+    Check(result["credentials_accessed"]!.GetValue<bool>() == false && result["http_requests_sent"]!.GetValue<int>() == 0);
+    Check(result["provider_api_calls"]!.GetValue<int>() == 0 && probe.Disposed);
+    Check(result["stages"]!["tls"]!["protocol"]!.GetValue<string>() == "Tls13");
+});
+foreach (var (stage, exception, code) in new (string, Exception, string)[]
+{
+    ("dns", new SocketException((int)SocketError.HostNotFound), "dns_name_resolution_failed"),
+    ("tcp", new SocketException((int)SocketError.AccessDenied), "tcp_access_denied"),
+    ("tcp", new SocketException((int)SocketError.ConnectionRefused), "tcp_connection_refused"),
+    ("tcp", new SocketException((int)SocketError.NetworkUnreachable), "tcp_unreachable"),
+    ("tcp", new UnauthorizedAccessException(Secret), "tcp_access_denied"),
+    ("tls", new AuthenticationException(Secret), "tls_handshake_failed"),
+    ("tls", new IOException(Secret, new SocketException((int)SocketError.ConnectionReset)), "tls_connection_reset"),
+    ("tls", new IOException(Secret), "tls_io_error"),
+    ("dns", new InvalidOperationException(Secret), "dns_unexpected_error")
+})
+Test("doctor_classification_" + code + "_" + exception.GetType().Name, async () =>
+{
+    var probe = new FakeNetworkProbe { FailureStage = stage, Failure = exception };
+    var result = await NetworkDoctor.RunAsync(injected: probe);
+    Check(!result["ok"]!.GetValue<bool>() && result["error_code"]!.GetValue<string>() == code);
+    Check(result["failed_stage"]!.GetValue<string>() == stage && probe.Disposed && !result.ToJsonString().Contains(Secret));
+    Check(probe.Calls.Count == (stage == "dns" ? 1 : stage == "tcp" ? 2 : 3));
+    if (stage != "tls") Check(result["stages"]!["tls"]!["status"]!.GetValue<string>() == "not_run");
+    if (exception is SocketException && code == "tcp_access_denied") Check(result["stages"]!["tcp"]!["socket_error"]!.GetValue<string>() == "AccessDenied");
+});
+Test("doctor_certificate_errors_observed_without_bypass", async () =>
+{
+    Check(NetworkProbe.CertificateAccepted(System.Net.Security.SslPolicyErrors.None));
+    foreach (var errors in new[] { System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors,
+        System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch, System.Net.Security.SslPolicyErrors.RemoteCertificateNotAvailable,
+        System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors | System.Net.Security.SslPolicyErrors.RemoteCertificateNameMismatch })
+        Check(!NetworkProbe.CertificateAccepted(errors));
+    var probe = new FakeNetworkProbe { FailureStage = "tls", Failure = new AuthenticationException(Secret),
+        CertificateErrors = ["chain_errors"], ChainStatusCodes = [32] };
+    var result = await NetworkDoctor.RunAsync(injected: probe);
+    Check(result["error_code"]!.GetValue<string>() == "tls_certificate_validation_failed");
+    Check(result["stages"]!["tls"]!["chain_status_codes"]![0]!.GetValue<int>() == 32 && !result.ToJsonString().Contains(Secret));
+});
+Test("doctor_tls_security_numeric_code_without_exception_text", async () =>
+{
+    var code = unchecked((int)0x8009030E);
+    var probe = new FakeNetworkProbe { FailureStage = "tls", Failure = new AuthenticationException(Secret,
+        new System.ComponentModel.Win32Exception(code, Secret)) };
+    var result = await NetworkDoctor.RunAsync(injected: probe);
+    Check(result["stages"]!["tls"]!["native_security_error_code"]!.GetValue<int>() == code);
+    Check(result["error_code"]!.GetValue<string>() == "tls_security_context_unavailable");
+    Check(result["stages"]!["tls"]!["exception_hresult_chain"]!.AsArray().Count == 2);
+    Check(!result.ToJsonString().Contains(Secret) && probe.Disposed);
+    Check(!result.ToJsonString(new JsonSerializerOptions { WriteIndented = false }).Contains(Secret));
+});
+foreach (var stage in new[] { "dns", "tcp", "tls" })
+Test("doctor_timeout_" + stage, async () =>
+{
+    var probe = new FakeNetworkProbe { DelayStage = stage };
+    var result = await NetworkDoctor.RunAsync(injected: probe, stageTimeout: TimeSpan.FromMilliseconds(20));
+    Check(result["error_code"]!.GetValue<string>() == stage + "_timeout" && probe.Disposed);
+    Check(probe.Calls.Count(c => c == stage) == 1);
+});
+Test("doctor_cancelled_before_dns_no_connection", async () =>
+{
+    var probe = new FakeNetworkProbe();
+    using var cts = new CancellationTokenSource(); cts.Cancel();
+    var result = await NetworkDoctor.RunAsync(cancellation: cts.Token, injected: probe);
+    Check(result["error_code"]!.GetValue<string>() == "cancelled" && probe.Calls.Count == 0 && probe.Disposed);
+});
+Test("doctor_cancel_inflight_stops_after_current_stage", async () =>
+{
+    using var cts = new CancellationTokenSource(); cts.CancelAfter(30);
+    var probe = new FakeNetworkProbe { DelayStage = "tcp" };
+    var result = await NetworkDoctor.RunAsync(cancellation: cts.Token, injected: probe);
+    Check(result["error_code"]!.GetValue<string>() == "cancelled" && probe.Disposed);
+    Check(probe.Calls.SequenceEqual(new[] { "dns", "tcp" }));
+    Check(result["stages"]!["tls"]!["status"]!.GetValue<string>() == "not_run");
+});
+Test("doctor_unknown_host_rejected_before_network", async () =>
+{
+    var probe = new FakeNetworkProbe();
+    try { await NetworkDoctor.RunAsync("https://evil.invalid", injected: probe); throw new InvalidOperationException(); }
+    catch (ArgumentException) { }
+    Check(probe.Calls.Count == 0);
 });
 
 var failures = 0;
@@ -337,4 +434,29 @@ sealed class RawStreamContent(Stream stream) : HttpContent
     protected override Task SerializeToStreamAsync(Stream target, TransportContext? context) => stream.CopyToAsync(target);
     protected override Task<Stream> CreateContentReadStreamAsync() => Task.FromResult(stream);
     protected override void Dispose(bool disposing) { if (disposing) stream.Dispose(); base.Dispose(disposing); }
+}
+sealed class FakeNetworkProbe : INetworkProbe
+{
+    public List<string> Calls { get; } = [];
+    public List<string> Hosts { get; } = [];
+    public string? FailureStage { get; init; }
+    public Exception? Failure { get; init; }
+    public string? DelayStage { get; init; }
+    public bool Disposed { get; private set; }
+    public string? AddressFamily => "IPv4";
+    public string? TlsProtocol => "Tls13";
+    public IReadOnlyList<string>? CertificateErrors { get; init; }
+    public IReadOnlyList<int>? ChainStatusCodes { get; init; }
+    private async Task Invoke(string stage, CancellationToken cancellation)
+    {
+        Calls.Add(stage);
+        if (FailureStage == stage) throw Failure!;
+        if (DelayStage == stage) await Task.Delay(Timeout.Infinite, cancellation);
+    }
+    public async Task<int> ResolveAsync(string host, CancellationToken cancellation)
+    { Hosts.Add(host); await Invoke("dns", cancellation); return 2; }
+    public Task ConnectAsync(CancellationToken cancellation) => Invoke("tcp", cancellation);
+    public Task TlsAsync(string host, CancellationToken cancellation)
+    { Hosts.Add(host); return Invoke("tls", cancellation); }
+    public void Dispose() => Disposed = true;
 }

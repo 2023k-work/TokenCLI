@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Network diagnostic result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["diagnostic_schema_version", "diagnostic_id", "ok", "provider", "host", "port", "connection_mode", "timeout_per_stage_s", "credentials_accessed", "http_requests_sent", "provider_api_calls", "failed_stage", "error_code", "elapsed_s", "stages"],
+  "properties": {
+    "diagnostic_schema_version": {"const": 1},
+    "diagnostic_id": {"type": "string"},
+    "ok": {"type": "boolean"},
+    "provider": {"enum": ["openai", "anthropic"]},
+    "host": {"enum": ["api.openai.com", "api.anthropic.com"]},
+    "port": {"const": 443},
+    "connection_mode": {"const": "direct"},
+    "timeout_per_stage_s": {"type": "number", "exclusiveMinimum": 0},
+    "credentials_accessed": {"const": false},
+    "http_requests_sent": {"const": 0},
+    "provider_api_calls": {"const": 0},
+    "failed_stage": {"enum": [null, "dns", "tcp", "tls"]},
+    "error_code": {"$ref": "#/$defs/errorCode"},
+    "elapsed_s": {"type": "number", "minimum": 0},
+    "cleanup_failed": {"const": true},
+    "stages": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dns", "tcp", "tls"],
+      "properties": {"dns": {"$ref": "#/$defs/stage"}, "tcp": {"$ref": "#/$defs/stage"}, "tls": {"$ref": "#/$defs/stage"}}
+    }
+  },
+  "$defs": {
+    "errorCode": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^(cancelled|tls_handshake_failed|tls_certificate_validation_failed|tls_security_context_unavailable|(dns|tcp|tls)_(timeout|access_denied|name_resolution_failed|connection_refused|unreachable|connection_reset|socket_error|io_error|unexpected_error))$"}
+      ]
+    },
+    "stage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "elapsed_s", "error_code", "socket_error", "native_error_code", "hresult"],
+      "properties": {
+        "status": {"enum": ["not_run", "passed", "failed"]},
+        "elapsed_s": {"type": ["number", "null"], "minimum": 0},
+        "error_code": {"$ref": "#/$defs/errorCode"},
+        "socket_error": {"type": ["string", "null"]},
+        "native_error_code": {"type": ["integer", "null"]},
+        "hresult": {"type": ["integer", "null"]},
+        "address_count": {"type": "integer", "minimum": 0},
+        "address_family": {"enum": [null, "IPv4", "IPv6"]},
+        "connection_attempts": {"const": 1},
+        "protocol": {"type": ["string", "null"]},
+        "certificate_errors": {"type": ["array", "null"], "items": {"enum": ["certificate_missing", "name_mismatch", "chain_errors"]}},
+        "chain_status_codes": {"type": ["array", "null"], "items": {"type": "integer"}},
+        "native_security_error_code": {"type": "integer"},
+        "exception_hresult_chain": {"type": "array", "items": {"type": "integer"}}
+      }
+    }
+  }
+}

@@ -1,18 +1,18 @@
 # TokenCLI
 
-公開原始碼：[2023k-work/TokenCLI](https://github.com/2023k-work/TokenCLI)。Windows 使用者可從 [v0.1.1 Release](https://github.com/2023k-work/TokenCLI/releases/tag/v0.1.1) 下載 ZIP，解壓後雙擊 BAT；下方提供完整操作方式。
+公開原始碼：[2023k-work/TokenCLI](https://github.com/2023k-work/TokenCLI)。Windows 使用者可從 [v0.1.2 Release](https://github.com/2023k-work/TokenCLI/releases/tag/v0.1.2) 下載 ZIP，解壓後雙擊 BAT；下方提供完整操作方式。
 
 獨立 C# CLI，透過 Windows Credential Manager 管理 OpenAI／Anthropic API Key；支援固定 Responses API 請求與一般文字生成。**沒有 MCP、Codex 登錄、Python 或 npm runtime 需求。**
 
 ## 快速開始：雙擊 BAT 設定 Token
 
-1. 解壓 `TokenCLI-0.1.1-win-x64.zip`，保留檔案的相對位置。
-2. 雙擊 **`Start-TokenCLI.bat`** 開啟中文選單。使用完整專案時，直接雙擊 `D:\Desktop\TokenCLI\Start-TokenCLI.bat`；也可使用 `dist\win-x64` 內的 BAT。
+1. 解壓 `TokenCLI-0.1.2-win-x64.zip`，保留檔案的相對位置。
+2. 雙擊 **`Start-TokenCLI.bat`** 開啟中文選單。使用完整專案時，直接雙擊 `D:\Desktop\TokenCLI\Start-TokenCLI.bat`；也可使用 `dist\0.1.2\win-x64` 內的 BAT。
 3. 按 `1` 設定 OpenAI／ChatGPT API Key，或按 `2` 設定 Claude／Anthropic API Key；只需設定實際使用的供應商。
 4. 在提示處貼上或輸入 Token，再按 **Enter**。輸入不會顯示文字或星號，這是正常的隱藏輸入。按 **Esc** 可取消，不儲存本次輸入。
 5. 完成後按任意鍵回到選單，再按 `3` 查看是否已儲存，最後按 `0` 離開。
 
-**同一 Windows 帳號設定一次即可，後續執行及重新開機會自動取用。** 不需要每次先開 BAT，也不需要把 Token 傳給呼叫端。BAT 只管理憑證與顯示說明，不會呼叫供應商 API 或啟動實驗。
+**同一 Windows 帳號設定一次即可，後續執行及重新開機會自動取用。** 不需要每次先開 BAT，也不需要把 Token 傳給呼叫端。BAT 提供憑證管理、說明與手動選取的免費網路診斷，不會呼叫供應商 API 或啟動實驗。
 
 | 選項 | 功能 |
 | --- | --- |
@@ -22,6 +22,8 @@
 | `4` | 刪除 OpenAI Token，輸入 `Y` 才刪除，`N` 返回 |
 | `5` | 刪除 Claude Token，輸入 `Y` 才刪除，`N` 返回 |
 | `6` | 查看 CLI 命令說明 |
+| `7` | OpenAI DNS／TCP／TLS 網路診斷，不讀金鑰、不發送 HTTP |
+| `8` | Claude DNS／TCP／TLS 網路診斷，不讀金鑰、不發送 HTTP |
 | `0` | 離開選單 |
 
 `true` 只表示 Credential Manager 中存在憑證，不代表金鑰有效、有 API 權限或有可用額度。選單不會進行真實 API 驗證。
@@ -37,7 +39,7 @@
 建議使用上方 BAT 選單。若偏好命令列，可在一般 PowerShell 終端切換至 EXE 所在目錄：
 
 ```powershell
-cd 'D:\Desktop\TokenCLI\dist\win-x64'
+cd 'D:\Desktop\TokenCLI\dist\0.1.2\win-x64'
 .\TokenCLI.exe credentials set openai
 .\TokenCLI.exe credentials set anthropic
 .\TokenCLI.exe credentials status
@@ -57,7 +59,7 @@ BAT 直接呼叫這些命令，由 CLI 隱藏讀取 Token；BAT 不會讀取或�
 
 ## BAT 常見問題
 
-- **找不到 TokenCLI.exe**：完整解壓 ZIP，不要只複製 BAT。BAT 可放在 EXE 旁邊，或完整專案根目錄並保留 `dist\win-x64\TokenCLI.exe`。
+- **找不到 TokenCLI.exe**：完整解壓 ZIP，不要只複製 BAT。BAT 可放在 EXE 旁邊，或完整專案根目錄並保留 `dist\0.1.2\win-x64\TokenCLI.exe`。
 - **輸入 Token 沒有任何字元**：這是隱藏輸入，貼上或輸入後按 Enter，不需要因為沒有星號而重複貼上。
 - **另一個終端／程式顯示未設定**：確認使用相同 Windows 帳號。不同帳號或服務帳號的 Credential Manager 不共用。
 - **金鑰已儲存但 API 失敗**：狀態查詢不會測試金鑰是否有效；應另確認供應商 API Key、權限及額度。需更換時再次選 `1` 或 `2` 即可。
@@ -71,9 +73,45 @@ BAT 直接呼叫這些命令，由 CLI 隱藏讀取 Token；BAT 不會讀取或�
 .\TokenCLI.exe schema input
 .\TokenCLI.exe schema output
 .\TokenCLI.exe schema generate-text
+.\TokenCLI.exe schema network
+.\TokenCLI.exe doctor network
+.\TokenCLI.exe doctor network anthropic
 ```
 
-沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 responses／generate-text 命令則**會連供應商並可能計費**；本次開發沒有呼叫它們的真實 API。
+doctor 會明確進行下述網路檢查；其他 help／version／schema 是離線操作。沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 responses／generate-text 命令則**會連供應商並可能計費**；本次開發沒有呼叫它們的真實 API。
+
+## 免費網路診斷：doctor network
+
+```powershell
+.\TokenCLI.exe doctor network
+.\TokenCLI.exe doctor network openai
+.\TokenCLI.exe doctor network anthropic
+```
+
+預設檢查 `api.openai.com:443`；anthropic 對應 `api.anthropic.com:443`。只接受上述 provider，不接受自訂網址、IP、port、代理或任意命令。也可在 BAT 選 `7`／`8`，不必輸入 Token。
+
+依序檢查 DNS → TCP → TLS；每階段最多 10 秒，失敗後停止，後續階段標為 not_run。DNS 解析後只選一個候選位址（IPv4 優先），只做一次 TCP connect，不測試所有 IP、不進行應用層重試。不使用代理，與 API 傳輸的 direct 模式一致。
+
+**不讀 Credential Manager、不傳金鑰、不建立任何 HTTP GET／HEAD／POST，也不呼叫 count／generate。** TLS 採 OS 預設協定與正常憑證／主機名稱驗證，觀察 callback 只接受 SslPolicyErrors.None；不忽略任何驗證錯誤，不會安裝憑證或調整安全政策。
+
+輸出為獨立的診斷 JSON，Schema 可用 `schema network` 取得，檔案見 [network-doctor.output.json](schemas/network-doctor.output.json)。含各階段 status／elapsed_s、安全分類、socket_error、native_error_code、hresult；TLS 另保留憑證錯誤旗標、憑證鏈狀態數碼、原生安全錯誤碼與 HRESULT 數碼鏈。沒有原始 exception 訊息、stack trace、cert subject／issuer、IP 清單或 HTTP headers。未知欄位保持未知，不補成成功。
+
+| 結果 | 意義及下一步 |
+| --- | --- |
+| dns_name_resolution_failed | 此環境無法解析固定主機，檢查允許的 DNS／網路政策 |
+| tcp_access_denied | socket 操作被拒絕，檢查實際執行程序的權限／端點政策 |
+| tcp_connection_refused／tcp_unreachable | 候選主機 TCP 443 無法連通，確認正常網路及防火牆規則 |
+| tls_security_context_unavailable | Windows 安全套件回報 0x8009030E，屬於程序的 TLS 安全 context 問題；不是 OpenAI／Anthropic API Key 失效的證據 |
+| tls_certificate_validation_failed | 證書缺失、名稱或信任鏈驗證未通過；與組織管理者確認信任設定，不要停用驗證 |
+| tls_handshake_failed | 其他 TLS 協商失敗；可提供安全數碼進一步查核，不能自行歸因為金鑰或額度 |
+| dns_timeout／tcp_timeout／tls_timeout | 該階段超過期限；後續不執行 |
+| ok=true | 本次單一候選位址的 DNS／TCP／TLS 通過，不代表 HTTP、API 權限、額度或生成可用 |
+
+若代理執行環境失敗，請使用者在實際的一般 PowerShell 執行同一命令比較；無需預設以管理員執行。診斷不會清除呼叫端的 halt、修改帳本、重送先前失敗的計數或自動安排下一筆操作；恢復實驗仍由呼叫端自己的協定與授權控制。
+
+本版採版本目錄與舊版並存。保留原 `dist/win-x64/TokenCLI.exe` 及舊 ZIP；請使用新路徑測診斷，不要以新版 EXE 覆蓋其他流程已固定雜湊的舊工具。來源／工具版本變更應由呼叫端另外核對。
+
+[Microsoft Windows 安全錯誤碼說明](https://learn.microsoft.com/en-us/windows/win32/com/com-error-codes-4)
 
 ## 程式整合：一個程序、一份輸入、一個結果
 
@@ -127,7 +165,7 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 | --- | --- |
 | 0 | 命令成功；對 API 僅表示有效傳輸結果，不代表模型已完成 |
 | 2 | 無效參數／輸入、憑證問題、HTTP 錯誤或本機錯誤；請解析 JSON |
-| 3 | API 嘗試後結果未知，保留費用並停止 |
+| 3 | API 嘗試後結果未知，或 doctor 網路檢查失敗；請先依輸出 Schema 區分命令，doctor 不代表有 API 嘗試 |
 | 130 | 使用者取消；若已嘗試則仍保留費用並停止 |
 
 ## 一般 OpenAI／Anthropic 文字呼叫
@@ -149,7 +187,7 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 
 免費測試以自製 HttpMessageHandler／假憑證驗證端點、契約、單次呼叫、usage、錯誤與取消、大小限制、遮蔽；另驗證真正的 CLI 子程序管線，以及隨機專用命名空間內的 Windows Credential Manager 假金鑰寫入／更新／刪除。正式 TokenCLI／TokenBridge 憑證不變動。
 
-發布產物為 `dist/win-x64/TokenCLI.exe`，self-contained 單檔含 .NET runtime。編譯產生的普通 `bin/Release/net8.0/TokenCLI.exe` 則需要 .NET 8 Runtime，請勿與正式 self-contained 發布包混淆。
+新版發布產物為 `dist/0.1.2/win-x64/TokenCLI.exe`，self-contained 單檔含 .NET runtime。編譯產生的普通 `bin/Release/net8.0/TokenCLI.exe` 則需要 .NET 8 Runtime，請勿與正式 self-contained 發布包混淆。
 
 ## 官方參考
 

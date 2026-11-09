@@ -1,10 +1,14 @@
 # 免費驗證紀錄
 
+0.1.2 更新：新增固定主機 doctor network、各階段 timeout／取消與安全錯誤分類，TLS 憑證觀察不接受任何驗證錯誤。新增輸出 Schema 與 BAT 選單；原 API 契約與傳輸不變。80 項免費測試通過，含新診斷與既有回歸。
+
+實際受限制執行環境探測：DNS 與 TCP 通過、TLS 回傳 0x8009030E（tls_security_context_unavailable）；沒有金鑰存取或 HTTP 請求。這是目前程序環境的證據，不追溯宣稱任何舊 API 嘗試的確切根因。原生安全錯誤的 JSON 數字陣列序列化問題曾由回歸測試重現，修正後通過，並以真實 CLI 輸出與 Schema 再核對。
+
 0.1.1 更新：文件與公開 CLI 說明改為通用 Responses 用途，新增 `responses` 命令，保留原有命令相容入口與 JSON 契約。下列測試已對新版重新執行，涵蓋兩個入口的子程序輸入驗證，以及公開說明不含特定專案名稱。
 
 本次在 Windows x64、.NET SDK 9.0.318／.NET 8.0.31 完成建置，0 警告、0 錯誤。
 
-**61 項測試全部通過，真實 AI API 呼叫為 0。**
+**80 項測試全部通過，真實 AI API 呼叫為 0。**
 
 - 精確固定 Responses count／generate 端點、完整訊息結構與固定參數。
 - 原始模型／服務層級／推理設定、完整巢狀用量、輸出串接及缺失欄位不補造。
@@ -18,7 +22,7 @@
 
 憑證測試只使用 `TokenCLI.Tests/<隨機UUID>`；不讀寫正式 TokenCLI／TokenBridge 的 API Key。沒有測試真實帳號權限、生成／計數、帳單或斷電重啟，不能把 mock 通過視為實驗已獲授權或已完成。
 
-已產生約 35 MB 的 self-contained 單檔 `dist/win-x64/TokenCLI.exe`，內含 .NET runtime；使用者無需安裝 Python、npm 或 .NET runtime。
+已產生約 35 MB 的 self-contained 單檔 `dist/0.1.2/win-x64/TokenCLI.exe`，內含 .NET runtime；使用者無需安裝 Python、npm 或 .NET runtime。
 
 重現：`Build-Test.cmd`。若要讓程序測試使用發布版：
 

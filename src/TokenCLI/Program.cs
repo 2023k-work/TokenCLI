@@ -24,14 +24,21 @@ public static class Program
     {
         if (args.Length == 0 || args is ["help"] or ["--help"] or ["-h"])
         {
-            Console.WriteLine("TokenCLI 0.1.1\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  responses       (one JSON {operation,payload} from stdin)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
+            Console.WriteLine("TokenCLI 0.1.2\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  doctor network [openai|anthropic] (DNS/TCP/TLS only; no credentials or HTTP)\n  responses       (one JSON {operation,payload} from stdin)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text|network\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
             return 0;
         }
         if (args is ["version"])
-        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.1.1" }); return 0; }
-        if (args is ["schema", var schema] && schema is "input" or "output" or "generate-text")
+        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.1.2" }); return 0; }
+        if (args is ["doctor", "network"] || args is ["doctor", "network", "openai"] or ["doctor", "network", "anthropic"])
         {
-            var name = schema switch { "input" => "responses.input.json", "output" => "responses.output.json", _ => "generate-text.input.json" };
+            var result = await NetworkDoctor.RunAsync(args.Length == 3 ? args[2] : "openai", cancellation);
+            Write(result);
+            if (result["ok"]!.GetValue<bool>()) return 0;
+            return result["error_code"]?.GetValue<string>() == "cancelled" ? 130 : 3;
+        }
+        if (args is ["schema", var schema] && schema is "input" or "output" or "generate-text" or "network")
+        {
+            var name = schema switch { "input" => "responses.input.json", "output" => "responses.output.json", "network" => "network-doctor.output.json", _ => "generate-text.input.json" };
             var assembly = Assembly.GetExecutingAssembly();
             var resource = assembly.GetManifestResourceNames().Single(n => n.EndsWith("." + name, StringComparison.Ordinal));
             using var reader = new StreamReader(assembly.GetManifestResourceStream(resource)!);
