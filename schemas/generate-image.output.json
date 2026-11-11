@@ -1,0 +1,213 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "ok": {
+      "title": "Ok",
+      "type": "boolean"
+    },
+    "bridge_request_id": {
+      "title": "Bridge Request Id",
+      "type": "string"
+    },
+    "operation": {
+      "const": "generate_image"
+    },
+    "outcome": {
+      "enum": [
+        "not_sent",
+        "attempted_unknown",
+        "http_error",
+        "response_received"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "http_attempted": {
+      "title": "Http Attempted",
+      "type": "boolean"
+    },
+    "http_status": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Http Status"
+    },
+    "provider_request_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Provider Request Id"
+    },
+    "elapsed_s": {
+      "title": "Elapsed S",
+      "type": "number"
+    },
+    "error_code": {
+      "anyOf": [
+        {
+          "enum": [
+            "invalid_input",
+            "credential_error",
+            "missing_token",
+            "sensitive_input",
+            "authentication_failed",
+            "rate_limited",
+            "redirect_rejected",
+            "http_error",
+            "timeout",
+            "network_error",
+            "cancelled",
+            "response_too_large",
+            "invalid_response",
+            "internal_error",
+            "output_exists",
+            "output_directory_missing",
+            "output_write_failed"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Error Code"
+    },
+    "response_id": {
+      "default": null,
+      "title": "Response Id"
+    },
+    "model": {
+      "default": null,
+      "title": "Model"
+    },
+    "service_tier": {
+      "default": null,
+      "title": "Service Tier"
+    },
+    "reasoning": {
+      "default": null,
+      "title": "Reasoning"
+    },
+    "status": {
+      "default": null,
+      "title": "Status"
+    },
+    "incomplete_details": {
+      "default": null,
+      "title": "Incomplete Details"
+    },
+    "usage": {
+      "default": null,
+      "title": "Usage"
+    },
+    "input_tokens": {
+      "default": null,
+      "title": "Input Tokens"
+    },
+    "output_text": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Output Text"
+    },
+    "raw_response_json": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Raw Response Json"
+    },
+    "present_fields": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Present Fields",
+      "type": "array"
+    },
+    "image_schema_version": {
+      "const": 1
+    },
+    "image_data_omitted": {
+      "const": true
+    },
+    "temporary_cleanup_failed": {
+      "const": true
+    },
+    "artifact": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "format",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "format": {
+          "enum": [
+            "png",
+            "jpeg",
+            "webp"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "required": [
+    "ok",
+    "bridge_request_id",
+    "operation",
+    "outcome",
+    "http_attempted",
+    "http_status",
+    "provider_request_id",
+    "elapsed_s",
+    "error_code",
+    "image_schema_version",
+    "image_data_omitted",
+    "artifact"
+  ],
+  "title": "Image generation evidence",
+  "type": "object"
+}

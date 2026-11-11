@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal DisableDelayedExpansion
 set "tokenCliExe=%~dp0TokenCLI.exe"
 if exist "%tokenCliExe%" goto ready
-set "tokenCliExe=%~dp0dist\0.1.2\win-x64\TokenCLI.exe"
+set "tokenCliExe=%~dp0dist\0.2.0\win-x64\TokenCLI.exe"
 if exist "%tokenCliExe%" goto ready
 set "tokenCliExe=%~dp0dist\win-x64\TokenCLI.exe"
 if not exist "%tokenCliExe%" goto missing
@@ -24,15 +24,18 @@ echo 5. 刪除 Claude Token
 echo 6. 查看 CLI 使用說明
 echo 7. OpenAI 免費網路診斷
 echo 8. Claude 免費網路診斷
+echo 9. OpenAI 付費產圖
 echo 0. 離開
 echo.
 echo 設定時輸入不會顯示，貼上 Token 後按 Enter。
 echo Token 儲存在目前 Windows 帳號的 Credential Manager。
-echo 此選單不會呼叫 AI API；網路診斷僅檢查 DNS / TCP / TLS。
+echo 選項 9 會先詢問圖片描述與路徑，經確認後付費呼叫一次。
+echo 選項 1-8 不會呼叫 AI API。
 echo.
-choice /c 123456780 /n /m "請選擇 [1-8,0]："
+choice /c 1234567890 /n /m "請選擇 [1-9,0]："
 if errorlevel 255 exit /b 1
-if errorlevel 9 exit /b 0
+if errorlevel 10 exit /b 0
+if errorlevel 9 goto image
 if errorlevel 8 goto doctor_anthropic
 if errorlevel 7 goto doctor_openai
 if errorlevel 6 goto help
@@ -97,6 +100,12 @@ goto menu
 :doctor_anthropic
 "%tokenCliExe%" doctor network anthropic
 echo 診斷已結束；失敗時請保留結果供檢查，勿直接重送已停止的 API 操作。
+pause
+goto menu
+
+:image
+"%tokenCliExe%" generate-image --interactive
+echo 操作已結束；發生錯誤不會自動重試，請保留上方 JSON。
 pause
 goto menu
 

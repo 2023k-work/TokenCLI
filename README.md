@@ -1,18 +1,18 @@
 # TokenCLI
 
-公開原始碼：[2023k-work/TokenCLI](https://github.com/2023k-work/TokenCLI)。Windows 使用者可從 [v0.1.2 Release](https://github.com/2023k-work/TokenCLI/releases/tag/v0.1.2) 下載 ZIP，解壓後雙擊 BAT；下方提供完整操作方式。
+公開原始碼：[2023k-work/TokenCLI](https://github.com/2023k-work/TokenCLI)。目前公開 Release 為 [v0.1.2](https://github.com/2023k-work/TokenCLI/releases/tag/v0.1.2)，尚無產圖功能。0.2.0 產圖功能的原始碼位於 [main](https://github.com/2023k-work/TokenCLI/tree/main)，本機提供 `dist/TokenCLI-0.2.0-win-x64.zip` 與版本目錄；尚未建立 0.2.0 GitHub Release，請勿將舊 Release 誤認為產圖版。
 
-獨立 C# CLI，透過 Windows Credential Manager 管理 OpenAI／Anthropic API Key；支援固定 Responses API 請求與一般文字生成。**沒有 MCP、Codex 登錄、Python 或 npm runtime 需求。**
+獨立 C# CLI，透過 Windows Credential Manager 管理 OpenAI／Anthropic API Key；支援固定 Responses API 請求、一般文字生成與 OpenAI 圖片生成。**沒有 MCP、Codex 登錄、Python 或 npm runtime 需求。**
 
 ## 快速開始：雙擊 BAT 設定 Token
 
-1. 解壓 `TokenCLI-0.1.2-win-x64.zip`，保留檔案的相對位置。
-2. 雙擊 **`Start-TokenCLI.bat`** 開啟中文選單。使用完整專案時，直接雙擊 `D:\Desktop\TokenCLI\Start-TokenCLI.bat`；也可使用 `dist\0.1.2\win-x64` 內的 BAT。
+1. 解壓 `TokenCLI-0.2.0-win-x64.zip`，保留檔案的相對位置。
+2. 雙擊 **`Start-TokenCLI.bat`** 開啟中文選單。使用完整專案時，直接雙擊 `D:\Desktop\TokenCLI\Start-TokenCLI.bat`；也可使用 `dist\0.2.0\win-x64` 內的 BAT。
 3. 按 `1` 設定 OpenAI／ChatGPT API Key，或按 `2` 設定 Claude／Anthropic API Key；只需設定實際使用的供應商。
 4. 在提示處貼上或輸入 Token，再按 **Enter**。輸入不會顯示文字或星號，這是正常的隱藏輸入。按 **Esc** 可取消，不儲存本次輸入。
 5. 完成後按任意鍵回到選單，再按 `3` 查看是否已儲存，最後按 `0` 離開。
 
-**同一 Windows 帳號設定一次即可，後續執行及重新開機會自動取用。** 不需要每次先開 BAT，也不需要把 Token 傳給呼叫端。BAT 提供憑證管理、說明與手動選取的免費網路診斷，不會呼叫供應商 API 或啟動實驗。
+**同一 Windows 帳號設定一次即可，後續執行及重新開機會自動取用。** 不需要每次先開 BAT，也不需要把 Token 傳給呼叫端。BAT 選項 1–8 提供憑證管理、說明與免費診斷；選項 9 在明確確認後發送一次付費產圖請求。
 
 | 選項 | 功能 |
 | --- | --- |
@@ -24,9 +24,10 @@
 | `6` | 查看 CLI 命令說明 |
 | `7` | OpenAI DNS／TCP／TLS 網路診斷，不讀金鑰、不發送 HTTP |
 | `8` | Claude DNS／TCP／TLS 網路診斷，不讀金鑰、不發送 HTTP |
+| `9` | OpenAI 付費產圖，輸入描述／路徑並確認 `Y` 才發送 |
 | `0` | 離開選單 |
 
-`true` 只表示 Credential Manager 中存在憑證，不代表金鑰有效、有 API 權限或有可用額度。選單不會進行真實 API 驗證。
+`true` 只表示 Credential Manager 中存在憑證，不代表金鑰有效、有 API 權限或有可用額度。憑證狀態查詢不會進行真實 API 驗證。
 
 ## 使用者先準備什麼
 
@@ -39,7 +40,7 @@
 建議使用上方 BAT 選單。若偏好命令列，可在一般 PowerShell 終端切換至 EXE 所在目錄：
 
 ```powershell
-cd 'D:\Desktop\TokenCLI\dist\0.1.2\win-x64'
+cd 'D:\Desktop\TokenCLI\dist\0.2.0\win-x64'
 .\TokenCLI.exe credentials set openai
 .\TokenCLI.exe credentials set anthropic
 .\TokenCLI.exe credentials status
@@ -59,7 +60,7 @@ BAT 直接呼叫這些命令，由 CLI 隱藏讀取 Token；BAT 不會讀取或�
 
 ## BAT 常見問題
 
-- **找不到 TokenCLI.exe**：完整解壓 ZIP，不要只複製 BAT。BAT 可放在 EXE 旁邊，或完整專案根目錄並保留 `dist\0.1.2\win-x64\TokenCLI.exe`。
+- **找不到 TokenCLI.exe**：完整解壓 ZIP，不要只複製 BAT。BAT 可放在 EXE 旁邊，或完整專案根目錄並保留 `dist\0.2.0\win-x64\TokenCLI.exe`。
 - **輸入 Token 沒有任何字元**：這是隱藏輸入，貼上或輸入後按 Enter，不需要因為沒有星號而重複貼上。
 - **另一個終端／程式顯示未設定**：確認使用相同 Windows 帳號。不同帳號或服務帳號的 Credential Manager 不共用。
 - **金鑰已儲存但 API 失敗**：狀態查詢不會測試金鑰是否有效；應另確認供應商 API Key、權限及額度。需更換時再次選 `1` 或 `2` 即可。
@@ -74,11 +75,13 @@ BAT 直接呼叫這些命令，由 CLI 隱藏讀取 Token；BAT 不會讀取或�
 .\TokenCLI.exe schema output
 .\TokenCLI.exe schema generate-text
 .\TokenCLI.exe schema network
+.\TokenCLI.exe schema image-input
+.\TokenCLI.exe schema image-output
 .\TokenCLI.exe doctor network
 .\TokenCLI.exe doctor network anthropic
 ```
 
-doctor 會明確進行下述網路檢查；其他 help／version／schema 是離線操作。沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 responses／generate-text 命令則**會連供應商並可能計費**；本次開發沒有呼叫它們的真實 API。
+doctor 會明確進行下述網路檢查；其他 help／version／schema 是離線操作。沒有自動 API 連線測試。`credentials status` 只回報有無憑證，不回傳內容，也不測試金鑰是否有效。下列 responses／generate-text／generate-image 命令則**會連供應商並可能計費**；0.2.0 產圖開發與測試沒有呼叫真實 API；另於 2026-11-11 經使用者授權，以同一份發布版完成一次真實產圖測試：HTTP 200、1024×1024 PNG、檔案 SHA-256 核對通過；沒有重試。
 
 ## 免費網路診斷：doctor network
 
@@ -172,11 +175,61 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 
 命令 `TokenCLI.exe generate-text` 接收 `{provider,model,prompt,max_output_tokens?}`；參考 [OpenAI](examples/openai.json)、[Anthropic](examples/anthropic.json) 範例。model 由使用者明確指定為自己帳號可用的 API model ID；prompt 1–32000 個 .NET 字元，輸出上限 16–8192（預設 1024）。回傳同樣的證據格式，完整 Anthropic stop_reason 等欄位保留在 raw_response_json。呼叫端必須使用 responses 命令，不以一般命令繞過固定實驗設定。
 
+## OpenAI 付費產圖（0.2.0）
+
+雙擊 BAT 選 `9`，或在一般互動 PowerShell 執行：
+
+```powershell
+.\TokenCLI.exe generate-image --interactive
+```
+
+輸入中文描述、儲存路徑（父目錄須已存在），再輸入 `Y`。預設產生一張 `gpt-image-2`、1024×1024、中品質、不透明 PNG。空白路徑會使用目前工作目錄中的唯一檔名；不是固定寫到 EXE 目錄。貼上的文字不經 BAT 拼接或執行。
+
+其他程式可將單一 JSON 送進 stdin，**這個非互動命令會直接付費，不會再詢問**：
+
+```powershell
+@{
+  prompt = '一隻坐在窗邊的小橘貓，柔和晨光，水彩插畫，沒有文字。'
+  output = 'D:\Pictures\cat.png'
+  model = 'gpt-image-2'
+  size = '1024x1024'
+  quality = 'medium'
+  output_format = 'png'
+  background = 'opaque'
+} | ConvertTo-Json -Compress | .\TokenCLI.exe generate-image
+```
+
+請先自行建立範例中的 `D:\Pictures`。亦可讀取 [examples/image.json](examples/image.json)，但執行即會付費；內含相對輸出路徑。輸入／輸出 Schema：`schema image-input`／`schema image-output`，檔案位於 [generate-image.input.json](schemas/generate-image.input.json)、[generate-image.output.json](schemas/generate-image.output.json)。路徑規則、父目錄與寫入權限另由 CLI 在本機驗證。
+
+| 輸入欄位 | 支援值與預設 |
+| --- | --- |
+| prompt | 必填、非空白，最多 32000 個 .NET 字元 |
+| output | 必填、本機檔案路徑；PNG 用 .png、JPEG 用 .jpg／.jpeg、WebP 用 .webp |
+| model | gpt-image-2（預設）、gpt-image-1.5、gpt-image-1-mini；不自動替換模型 |
+| size | 1024x1024（預設）、1536x1024、1024x1536 |
+| quality | low、medium（預設）、high |
+| output_format | png（預設）、jpeg、webp |
+| background | opaque（預設）、transparent、auto；JPEG 禁止 transparent |
+
+僅支援 OpenAI 文字轉圖片，固定 `POST https://api.openai.com/v1/images/generations`，固定 n=1、stream=false、moderation=auto。`output` 只在本機使用，不送供應商。不提供編輯／上傳圖片、SVG／GIF、批次、遠端圖片 URL、工具或自訂網址。只支援表列模型與尺寸；官方支援的其他參數仍會明確拒絕。GPT Image 本來就回傳 base64，因此不傳不受支援的 response_format。帳號可能需完成組織驗證並取得相應模型權限。
+
+`gpt-image-2` 的 transparent 在官方文件列為 preview；不保證所有帳號可用。API 拒絕時會回報錯誤，不會改用不透明背景、其他模型或本機去背。PNG／WebP 是必要格式，但 CLI 不驗證實際 alpha 通道或視覺內容。
+
+成功回傳 artifact.path／format／bytes／sha256、HTTP 狀態、安全 request ID、供應商實際 model（未回傳則 null）、完整巢狀 usage 與 present_fields。Images API 未必回傳 response ID／status，不會補造。raw_response_json 保留經金鑰遮蔽的回應，但 b64_json 以 `[IMAGE_DATA_OMITTED]` 代替；image_data_omitted=true。它不是完整原始影像回應，圖片 bytes 與 SHA-256 才是輸出檔核對依據，不把請求模型冒充成實際模型。
+
+發送前檢查既有檔案／父目錄及暫存檔寫入權限；回應先在記憶體中驗證，再寫同目錄的唯一暫存檔並 flush，最後以不覆寫的 move 提交。URL、UNC／裝置路徑、ADS、Windows 保留檔名及副檔名不符會被拒絕。驗證含 base64、解碼上限及格式簽章；不是完整影像解碼或安全掃描，不會開啟圖片或執行回傳內容。突然中止可能留下 `.tokencli-*.tmp`；工具不自動掃描清理，也不自動重送。
+
+圖片傳輸最多 180 秒（連線階段仍受共用 90 秒上限），回應上限 32 MiB、解碼圖片上限 20 MiB。每次只送一次，拒絕壓縮回應、重新導向及遠端 URL 下載，沿用正常 TLS 驗證與 Credential Manager，無金鑰 fallback。
+
+若 API 已回應、但儲存時遇到碰撞／磁碟問題：ok=false、error_code=output_write_failed、outcome=response_received，保留 usage；這不表示免費。若原本已存在則 output_exists／not_sent；父目錄不存在則 output_directory_missing／not_sent。timeout、429、取消、結果未知或檔案提交後 stdout 遺失都不應直接重送。CLI 沒有跨程序帳本或去重，圖片路徑不是付費請求的唯一性鎖，也不計算費用。
+
+若代理沙箱出現 tls_security_context_unavailable，先在一般 PowerShell 或正式核准的沙箱外環境執行免費 doctor；不以管理員權限、停用 TLS 或反覆付費嘗試排查。
+
 ## 傳輸與安全
 
 每個程序只送出一次 HTTP，不使用 AI SDK 或重試迴圈。強制新 HTTP/1.1 連線、Connection: close，避免 HTTP/2 重送與舊連線重用；不跟隨重新導向、不使用系統／環境代理、不傳 cookie。目的地固定，TLS 採用 OS 的正常憑證驗證，沒有忽略驗證選項。
 
-送出及讀取共用 90 秒期限；回應上限 4000000 bytes，同時檢查 Content-Length 與逐塊實際大小，拒絕壓縮回應。取消會取消傳輸，不會重新送出。應用程式不建立含金鑰／請求／回應的日誌，錯誤只輸出固定分類。金鑰僅在 TLS 中的供應商認證 header 使用，不進 request body。沒有修改 Codex 設定或啟動外部腳本的功能。
+文字／計數送出及讀取共用 90 秒期限；回應上限 4000000 bytes（產圖使用上節獨立上限），同時檢查 Content-Length 與逐塊實際大小，拒絕壓縮回應。取消會取消傳輸，不會重新送出。應用程式不建立含金鑰／請求／回應的日誌，錯誤只輸出固定分類。金鑰僅在 TLS 中的供應商認證 header 使用，不進 request body。沒有修改 Codex 設定或啟動外部腳本的功能。
 
 ## 建置、測試及發布
 
@@ -187,7 +240,7 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 
 免費測試以自製 HttpMessageHandler／假憑證驗證端點、契約、單次呼叫、usage、錯誤與取消、大小限制、遮蔽；另驗證真正的 CLI 子程序管線，以及隨機專用命名空間內的 Windows Credential Manager 假金鑰寫入／更新／刪除。正式 TokenCLI／TokenBridge 憑證不變動。
 
-新版發布產物為 `dist/0.1.2/win-x64/TokenCLI.exe`，self-contained 單檔含 .NET runtime。編譯產生的普通 `bin/Release/net8.0/TokenCLI.exe` 則需要 .NET 8 Runtime，請勿與正式 self-contained 發布包混淆。
+新版發布產物為 `dist/0.2.0/win-x64/TokenCLI.exe`，self-contained 單檔含 .NET runtime。編譯產生的普通 `bin/Release/net8.0/TokenCLI.exe` 則需要 .NET 8 Runtime，請勿與正式 self-contained 發布包混淆。
 
 ## 官方參考
 
@@ -196,3 +249,6 @@ stdout 證據保留 HTTP 狀態、安全的供應商 request ID、response ID、
 - [Responses 建立](https://developers.openai.com/api/reference/python/resources/responses/methods/create)
 - [輸入計數](https://developers.openai.com/api/reference/resources/responses/subresources/input_tokens/methods/count)
 - [Anthropic Messages](https://platform.claude.com/docs/en/api/messages)
+
+- [OpenAI Images 產圖 API（2026-11-11 核對）](https://developers.openai.com/api/reference/resources/images/methods/generate)
+- [OpenAI 圖片生成指南](https://developers.openai.com/api/docs/guides/image-generation)

@@ -300,6 +300,16 @@ Test("real_cli_process_json_and_no_secret_output", async () =>
     var networkSchema = await Run(["schema", "network"]);
     Check(networkSchema.Code == 0 && JsonNode.Parse(networkSchema.Out)!["properties"]!["http_requests_sent"]!["const"]!.GetValue<int>() == 0);
     var help = await Run(["help"]);
+    foreach (var name in new[] { "image-input", "image-output" })
+    {
+        var imageSchema = await Run(["schema", name]);
+        Check(imageSchema.Code == 0 && JsonNode.Parse(imageSchema.Out)!["additionalProperties"]!.GetValue<bool>() == false);
+    }
+    var imageInvalid = await Run(["generate-image"], "{\"prompt\":\"" + Secret + "\",\"output\":\"bad.svg\"}");
+    Error(JsonNode.Parse(imageInvalid.Out)!.AsObject(), "invalid_input", "not_sent");
+    Check(!imageInvalid.Err.Contains(Secret) && !imageInvalid.Out.Contains(Secret));
+    var interactive = await Run(["generate-image", "--interactive"]);
+    Check(interactive.Code == 2 && JsonNode.Parse(interactive.Out)!["error_code"]!.GetValue<string>() == "local_error");
     Check(help.Code == 0 && help.Out.Contains("responses") && help.Out.Contains("doctor network") && !help.Out.Contains("aoelr", StringComparison.OrdinalIgnoreCase));
     var invalidDoctor = await Run(["doctor", "network", "https://evil.invalid"]);
     Check(invalidDoctor.Code == 2 && JsonNode.Parse(invalidDoctor.Out)!["error_code"]!.GetValue<string>() == "invalid_arguments");
@@ -402,6 +412,8 @@ Test("doctor_unknown_host_rejected_before_network", async () =>
     catch (ArgumentException) { }
     Check(probe.Calls.Count == 0);
 });
+
+ImageTests.Add(Test);
 
 var failures = 0;
 var clock = Stopwatch.StartNew();

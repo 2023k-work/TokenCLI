@@ -24,11 +24,11 @@ public static class Program
     {
         if (args.Length == 0 || args is ["help"] or ["--help"] or ["-h"])
         {
-            Console.WriteLine("TokenCLI 0.1.2\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  doctor network [openai|anthropic] (DNS/TCP/TLS only; no credentials or HTTP)\n  responses       (one JSON {operation,payload} from stdin)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text|network\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
+            Console.WriteLine("TokenCLI 0.2.0\n  credentials set openai|anthropic  (hidden terminal input)\n  credentials status\n  credentials delete openai|anthropic\n  doctor network [openai|anthropic] (DNS/TCP/TLS only; no credentials or HTTP)\n  responses       (one JSON {operation,payload} from stdin)\n  generate-image  (one JSON {prompt,output,model?,size?,quality?,output_format?,background?} from stdin; paid)\n  generate-text   (one JSON {provider,model,prompt,max_output_tokens?} from stdin)\n  schema input|output|generate-text|network|image-input|image-output\n  version\nNo MCP registration. No token argument, read-token command or automatic retries.");
             return 0;
         }
         if (args is ["version"])
-        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.1.2" }); return 0; }
+        { Write(new JsonObject { ["name"] = "TokenCLI", ["version"] = "0.2.0" }); return 0; }
         if (args is ["doctor", "network"] || args is ["doctor", "network", "openai"] or ["doctor", "network", "anthropic"])
         {
             var result = await NetworkDoctor.RunAsync(args.Length == 3 ? args[2] : "openai", cancellation);
@@ -36,9 +36,9 @@ public static class Program
             if (result["ok"]!.GetValue<bool>()) return 0;
             return result["error_code"]?.GetValue<string>() == "cancelled" ? 130 : 3;
         }
-        if (args is ["schema", var schema] && schema is "input" or "output" or "generate-text" or "network")
+        if (args is ["schema", var schema] && schema is "input" or "output" or "generate-text" or "network" or "image-input" or "image-output")
         {
-            var name = schema switch { "input" => "responses.input.json", "output" => "responses.output.json", "network" => "network-doctor.output.json", _ => "generate-text.input.json" };
+            var name = schema switch { "input" => "responses.input.json", "output" => "responses.output.json", "network" => "network-doctor.output.json", "image-input" => "generate-image.input.json", "image-output" => "generate-image.output.json", _ => "generate-text.input.json" };
             var assembly = Assembly.GetExecutingAssembly();
             var resource = assembly.GetManifestResourceNames().Single(n => n.EndsWith("." + name, StringComparison.Ordinal));
             using var reader = new StreamReader(assembly.GetManifestResourceStream(resource)!);
@@ -63,17 +63,19 @@ public static class Program
             else credentials.Delete(provider);
             Write(new JsonObject { ["ok"] = true, ["provider"] = provider, ["action"] = action }); return 0;
         }
-        if (args is ["responses"] or ["aoelr"] or ["generate-text"])
+        if (args is ["responses"] or ["aoelr"] or ["generate-text"] or ["generate-image"] or ["generate-image", "--interactive"])
         {
             JsonObject evidence;
             try
             {
                 using var input = Console.OpenStandardInput();
-                var bytes = await ReadInput(input, cancellation);
-                evidence = await new ApiEngine(credentials).ExecuteAsync(bytes, args[0] != "generate-text", cancellation);
+                var bytes = args is ["generate-image", "--interactive"] ? ImageTerminal.ReadRequest(cancellation) : await ReadInput(input, cancellation);
+                evidence = args[0] == "generate-image"
+                    ? await new ImageEngine(credentials).ExecuteAsync(bytes, cancellation)
+                    : await new ApiEngine(credentials).ExecuteAsync(bytes, args[0] != "generate-text", cancellation);
             }
-            catch (ContractException) { evidence = ApiEngine.EmptyEvidence(); evidence["error_code"] = "invalid_input"; }
-            catch (OperationCanceledException) { evidence = ApiEngine.EmptyEvidence(); evidence["error_code"] = "cancelled"; }
+            catch (ContractException) { evidence = args[0] == "generate-image" ? ImageEngine.EmptyEvidence() : ApiEngine.EmptyEvidence(); evidence["error_code"] = "invalid_input"; }
+            catch (OperationCanceledException) { evidence = args[0] == "generate-image" ? ImageEngine.EmptyEvidence() : ApiEngine.EmptyEvidence(); evidence["error_code"] = "cancelled"; }
             Write(evidence);
             if (evidence["ok"]?.GetValue<bool>() == true) return 0;
             if (evidence["error_code"]?.GetValue<string>() == "cancelled") return 130;

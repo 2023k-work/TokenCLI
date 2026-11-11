@@ -29,7 +29,11 @@ public sealed class ApiEngine(ICredentials credentials, Func<HttpMessageHandler>
         PooledConnectionLifetime = TimeSpan.Zero, PooledConnectionIdleTimeout = TimeSpan.Zero,
         ConnectTimeout = Deadline
     };
-    public async Task<JsonObject> ExecuteAsync(ReadOnlyMemory<byte> input, bool aoelr, CancellationToken cancellation = default)
+    public Task<JsonObject> ExecuteAsync(ReadOnlyMemory<byte> input, bool aoelr, CancellationToken cancellation = default) =>
+        ExecuteCoreAsync(input, node => aoelr ? Contract.Aoelr(node) : Contract.GenerateText(node), false, cancellation);
+    internal Task<JsonObject> ExecuteImagesAsync(ReadOnlyMemory<byte> input, CancellationToken cancellation) =>
+        ExecuteCoreAsync(input, node => ImageContract.Parse(node).Call, true, cancellation);
+    private async Task<JsonObject> ExecuteCoreAsync(ReadOnlyMemory<byte> input, Func<JsonObject, ApiCall> parse, bool image, CancellationToken cancellation)
     {
         var clock = Stopwatch.StartNew();
         var result = EmptyEvidence();
@@ -40,7 +44,8 @@ public sealed class ApiEngine(ICredentials credentials, Func<HttpMessageHandler>
             return result;
         }
         ApiCall call;
-        try { call = aoelr ? Contract.Aoelr(Contract.Parse(input)) : Contract.GenerateText(Contract.Parse(input)); }
+        JsonObject envelope;
+        try { envelope = Contract.Parse(input); call = parse(envelope); }
         catch (Exception ex) when (ex is ContractException or JsonException or InvalidOperationException or ArgumentException)
         { return Finish("invalid_input"); }
         result["operation"] = call.Operation;
@@ -49,13 +54,13 @@ public sealed class ApiEngine(ICredentials credentials, Func<HttpMessageHandler>
         try { token = credentials.Read(call.Provider); }
         catch (CredentialException) { return Finish("credential_error"); }
         if (string.IsNullOrEmpty(token)) return Finish("missing_token");
-        if (ContainsSecret(call.Body, token)) return Finish("sensitive_input");
+        if (ContainsSecret(envelope, token)) return Finish("sensitive_input");
         try
         {
             using var handler = handlerFactory?.Invoke() ?? CreateHandler();
             using var client = new HttpClient(handler, disposeHandler: false) { Timeout = Timeout.InfiniteTimeSpan };
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-            deadline.CancelAfter(deadlineOverride ?? Deadline);
+            deadline.CancelAfter(deadlineOverride ?? (image ? ImageContract.Deadline : Deadline));
             using var request = new HttpRequestMessage(HttpMethod.Post, call.Endpoint)
             {
                 Version = HttpVersion.Version11, VersionPolicy = HttpVersionPolicy.RequestVersionExact,
@@ -93,20 +98,21 @@ public sealed class ApiEngine(ICredentials credentials, Func<HttpMessageHandler>
             }
             if (response.Content.Headers.ContentEncoding.Any(e => !e.Equals("identity", StringComparison.OrdinalIgnoreCase)))
                 return Finish("invalid_response");
-            if (response.Content.Headers.ContentLength > MaxResponseBytes) return Finish("response_too_large");
+            if (response.Content.Headers.ContentLength > (image ? ImageContract.MaxResponseBytes : MaxResponseBytes)) return Finish("response_too_large");
             using var body = await response.Content.ReadAsStreamAsync(deadline.Token);
             using var buffer = new MemoryStream();
             var chunk = new byte[16384];
             int read;
             while ((read = await body.ReadAsync(chunk, deadline.Token)) != 0)
             {
-                if (buffer.Length + read > MaxResponseBytes) return Finish("response_too_large");
+                if (buffer.Length + read > (image ? ImageContract.MaxResponseBytes : MaxResponseBytes)) return Finish("response_too_large");
                 buffer.Write(chunk, 0, read);
             }
             using var document = JsonDocument.Parse(buffer.ToArray(), new JsonDocumentOptions { MaxDepth = 64 });
             Contract.RejectDuplicates(document.RootElement);
             var data = JsonNode.Parse(document.RootElement.GetRawText()) as JsonObject ?? throw new ContractException();
             if (data["error"] is not null) return Finish("invalid_response");
+            if (image) _ = ImageContract.Decode(data, Contract.Text(call.Body["output_format"]), token);
             data = (JsonObject)Scrub(data, token)!;
             result["raw_response_json"] = data.ToJsonString();
             result["present_fields"] = new JsonArray(data.Select(p => (JsonNode?)JsonValue.Create(p.Key)).ToArray());
